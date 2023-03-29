@@ -28,17 +28,32 @@ def get_info_device():
     if device < len(device_info):
         print(f"\nDevice info:")
 
-        device_name = device_info[int(device)]["name"]
-        device_channels = device_info[int(device)]["max_input_channels"]
+        device =  device_info[int(device)]
+        device_name = device["name"]
+        device_channels = device["max_input_channels"]
 
         print("Device name:", device_name)
         print("Device input channels:", device_channels, "(Mono)" if device_channels==1 else "(Stereo)")
 
+        return device
+
     else:
         sys.exit("Device is index out of range")
-        
 
-def get_ready():
+def filename():
+    filename = input(f"\nFile name: ")
+
+    return filename
+
+def get_ready(device, filename):
+    filepath = OUTPUT_FOLDER+filename+".wav"
+
+    print(f"\nDevice name is", device["name"])
+    print("Device channels is", device["max_input_channels"])
+    print("Sample Rate is", str(SAMPLE_RATE))
+    print("File Name is", filename)
+    print("File Path is", filepath)
+
     print(f"\n=======================")
     print(f"Get ready for recording")
     print(f"=======================\n")
@@ -56,9 +71,11 @@ def recording():
 def main():
     get_avail_device()
 
-    get_info_device()
+    device = get_info_device()
 
-    get_ready()
+    file_name = filename()
+
+    get_ready(device, file_name)
 
 if __name__ == "__main__":
     main()
