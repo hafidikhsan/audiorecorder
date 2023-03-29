@@ -1,9 +1,13 @@
 import sys
+import os
 import sounddevice as sd
 import soundfile as sf
+from queue import Queue
 
 SAMPLE_RATE = 24000
-OUTPUT_FOLDER = "/sound/"
+OUTPUT_FOLDER = os.path.join("sound")
+
+q = Queue()
 
 def intro():
     print(f"****************************** Recording Audio ******************************")
@@ -46,13 +50,13 @@ def filename():
     return filename
 
 def get_ready(device, filename):
-    filepath = OUTPUT_FOLDER+filename+".wav"
+    filename = filename+".wav"
 
     print(f"\nDevice name is", device["name"])
     print("Device channels is", device["max_input_channels"])
     print("Sample Rate is", str(SAMPLE_RATE))
     print("File Name is", filename)
-    print("File Path is", filepath)
+    print("File Path is", os.path.join(OUTPUT_FOLDER, filename))
 
     print(f"\n=======================")
     print(f"Get ready for recording")
@@ -61,12 +65,31 @@ def get_ready(device, filename):
     confirmation = input("Type (Y/y) if you ready: ")
 
     if confirmation=="y" or confirmation=="Y":
-        recording()
+        recording(device, filename)
     else:
         sys.exit("Opps, process aborted")
 
-def recording():
-    print("recording")
+def callback(indata, frames, time, status):
+    if status:
+        print(f"\nRecording...\n", flush=True)
+    q.put(indata.copy())
+
+def recording(device, filename):
+    try:
+        with sf.SoundFile(os.path.join(OUTPUT_FOLDER, filename), mode='x', samplerate=SAMPLE_RATE,
+                        channels=device["max_input_channels"], subtype="PCM_16") as file:
+            with sd.InputStream(samplerate=SAMPLE_RATE, device=device["name"],
+                                channels=device["max_input_channels"], callback=callback):
+                print('*' * 80)
+                print(f"\nGet ready for recording...")
+                print(f"Control + C for stop recording\n")
+                print('*' * 80)
+                while True:
+                    file.write(q.get())
+    except KeyboardInterrupt:
+        sys.exit(f"\nYes, Recording finished")
+    except Exception as e:
+        sys.exit(f"\nOpss, Something went wrong:", str(e))
 
 def main():
     get_avail_device()
